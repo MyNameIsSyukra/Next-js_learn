@@ -26,9 +26,9 @@ export function useAuth(): UseAuthReturn {
     try {
       const data = await authService.login(payload);
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.data.access_token) {
+        localStorage.setItem("token", data.data.access_token);
+        localStorage.setItem("user", JSON.stringify(data.data));
       }
 
       router.push("/dashboard"); // Redirect setelah login

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSeparator } from "@/components/ui/field";
 import { useAuth } from "@/hooks/use-auth";
-import { ErrorAlert } from "@/components/ui/error-alert";
 
 interface LoginFormProps {
   onSwitchToSignup: () => void;
@@ -13,7 +12,7 @@ interface LoginFormProps {
 export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, loading, error, clearError } = useAuth();
+  const { login, clearError } = useAuth();
 
   const handleSubmit = async () => {
     await login({ email, password });

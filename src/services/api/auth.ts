@@ -14,11 +14,9 @@ export interface RegisterPayload {
 }
 
 export interface AuthResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    name?: string;
+  data: {
+    access_token: string;
+    nama: string;
   };
   message?: string;
 }
@@ -36,7 +34,7 @@ export const authService = {
     return apiClient.post("/auth/logout");
   },
 
-  getProfile: async (): Promise<AuthResponse["user"]> => {
-    return apiClient.get("/auth/me");
-  },
+  // getProfile: async (): Promise<AuthResponse["user"]> => {
+  //   return apiClient.get("/auth/me");
+  // },
 };

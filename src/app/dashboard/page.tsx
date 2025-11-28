@@ -1,38 +1,66 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Home, User, LogOut, Edit, Trash2, ChevronLeft, ChevronRight, X, Plus } from "lucide-react";
+import { Home, User, LogOut, Edit, Trash2, ChevronLeft, ChevronRight, X, Plus, Loader2 } from "lucide-react";
+import { patientService } from "@/services/api/patient";
+
+// Interface untuk data pasien di component
+interface PatientData {
+  id: string;
+  name: string;
+  gender: string;
+  phone: string;
+  status: boolean;
+}
 
 export default function PatientDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newPatient, setNewPatient] = useState({
     name: "",
-    age: "",
     gender: "",
     phone: "",
-    address: "",
   });
-  const [patients, setPatients] = useState([
-    { id: 1, name: "Ahmad Wijaya", age: 35, gender: "Laki-laki", phone: "081234567890", address: "Jakarta Selatan" },
-    { id: 2, name: "Siti Nurhaliza", age: 28, gender: "Perempuan", phone: "082345678901", address: "Bandung" },
-    { id: 3, name: "Budi Santoso", age: 42, gender: "Laki-laki", phone: "083456789012", address: "Surabaya" },
-    { id: 4, name: "Dewi Lestari", age: 31, gender: "Perempuan", phone: "084567890123", address: "Yogyakarta" },
-    { id: 5, name: "Rudi Hartono", age: 55, gender: "Laki-laki", phone: "085678901234", address: "Medan" },
-    { id: 6, name: "Ani Kusuma", age: 29, gender: "Perempuan", phone: "086789012345", address: "Semarang" },
-    { id: 7, name: "Hendra Setiawan", age: 38, gender: "Laki-laki", phone: "087890123456", address: "Malang" },
-    { id: 8, name: "Rina Melati", age: 26, gender: "Perempuan", phone: "088901234567", address: "Denpasar" },
-    { id: 9, name: "Yanto Prasetyo", age: 47, gender: "Laki-laki", phone: "089012345678", address: "Makassar" },
-    { id: 10, name: "Maya Sari", age: 33, gender: "Perempuan", phone: "081123456789", address: "Palembang" },
-    { id: 11, name: "Agus Salim", age: 41, gender: "Laki-laki", phone: "082234567890", address: "Bogor" },
-    { id: 12, name: "Linda Wijayanti", age: 30, gender: "Perempuan", phone: "083345678901", address: "Tangerang" },
-  ]);
+  const [patients, setPatients] = useState<PatientData[]>([]);
+
+  // Fetch patients on component mount
+  useEffect(() => {
+    fetchPatients();
+  }, []);
+
+  const fetchPatients = async () => {
+    try {
+      setIsFetching(true);
+      setError(null);
+      const response = await patientService.getPatients();
+
+      if (response.status && response.data) {
+        // Transform API data to match component structure
+        const transformedData = response.data.map((patient) => ({
+          id: patient.pasienid,
+          name: patient.nama,
+          gender: patient.gender === "Male" ? "Laki-laki" : "Perempuan",
+          phone: patient.phoneNumber,
+          status: patient.status,
+        }));
+        setPatients(transformedData);
+      }
+    } catch (err) {
+      setError("Gagal memuat data pasien. Silakan coba lagi.");
+      console.error("Error fetching patients:", err);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const itemsPerPage = 8;
   const totalPages = Math.ceil(patients.length / itemsPerPage);
@@ -40,33 +68,105 @@ export default function PatientDashboard() {
   const endIndex = startIndex + itemsPerPage;
   const currentPatients = patients.slice(startIndex, endIndex);
 
-  const handleEdit = (patient) => {
+  const handleEdit = (patient: PatientData) => {
     setSelectedPatient({ ...patient });
     setIsEditOpen(true);
   };
 
-  const handleDelete = (patient) => {
+  const handleDelete = (patient: PatientData) => {
     setSelectedPatient(patient);
     setIsDeleteOpen(true);
   };
 
-  const confirmDelete = () => {
-    setPatients(patients.filter((p) => p.id !== selectedPatient.id));
-    setIsDeleteOpen(false);
-    setSelectedPatient(null);
+  const saveEdit = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      if (!selectedPatient || !selectedPatient.name || !selectedPatient.gender || !selectedPatient.phone) {
+        setError("Semua field harus diisi");
+        return;
+      }
+
+      // Transform gender to API format
+      const genderApi = selectedPatient.gender.toLowerCase() === "laki-laki" || selectedPatient.gender.toLowerCase() === "male" ? "Male" : "Female";
+
+      const payload = {
+        pasienid: selectedPatient.id,
+        Name: selectedPatient.name,
+        Gender: genderApi as "Male" | "Female",
+        PhoneNumber: selectedPatient.phone,
+      };
+
+      await patientService.updatePatient(payload);
+
+      // Refresh patient list after successful update
+      await fetchPatients();
+      setIsEditOpen(false);
+      setSelectedPatient(null);
+    } catch (err) {
+      setError("Gagal mengupdate pasien. Silakan coba lagi.");
+      console.error("Error updating patient:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const saveEdit = () => {
-    setPatients(patients.map((p) => (p.id === selectedPatient.id ? selectedPatient : p)));
-    setIsEditOpen(false);
-    setSelectedPatient(null);
+  const confirmDelete = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      if (!selectedPatient) return;
+
+      await patientService.deletePatient(selectedPatient.id);
+
+      // Refresh patient list after successful delete
+      await fetchPatients();
+      setIsDeleteOpen(false);
+      setSelectedPatient(null);
+    } catch (err) {
+      setError("Gagal menghapus pasien. Silakan coba lagi.");
+      console.error("Error deleting patient:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const addPatient = () => {
-    const newId = Math.max(...patients.map((p) => p.id)) + 1;
-    setPatients([...patients, { id: newId, ...newPatient, age: parseInt(newPatient.age) }]);
-    setIsAddOpen(false);
-    setNewPatient({ name: "", age: "", gender: "", phone: "", address: "" });
+  const addPatient = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Validate input
+      if (!newPatient.name || !newPatient.gender || !newPatient.phone) {
+        setError("Semua field harus diisi");
+        return;
+      }
+
+      // Transform gender to API format
+      const genderApi = newPatient.gender.toLowerCase() === "laki-laki" || newPatient.gender.toLowerCase() === "male" ? "Male" : "Female";
+
+      const payload = {
+        Name: newPatient.name,
+        Gender: genderApi as "Male" | "Female",
+        PhoneNumber: newPatient.phone,
+      };
+
+      const response = await patientService.addPatient(payload);
+
+      if (response.message) {
+        // Refresh patient list after successful add
+        await fetchPatients();
+        setIsAddOpen(false);
+        setNewPatient({ name: "", gender: "", phone: "" });
+      }
+    } catch (err) {
+      setError("Gagal menambahkan pasien. Silakan coba lagi.");
+      console.error("Error adding patient:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -108,70 +208,82 @@ export default function PatientDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Daftar Pasien</CardTitle>
-              <Button onClick={() => setIsAddOpen(true)}>
+              <Button onClick={() => setIsAddOpen(true)} disabled={isFetching}>
                 <Plus className="w-4 h-4 mr-2" />
                 Tambah Pasien
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-medium">No</th>
-                    <th className="text-left p-4 font-medium">Nama</th>
-                    <th className="text-left p-4 font-medium">Usia</th>
-                    <th className="text-left p-4 font-medium">Jenis Kelamin</th>
-                    <th className="text-left p-4 font-medium">Telepon</th>
-                    <th className="text-left p-4 font-medium">Alamat</th>
-                    <th className="text-right p-4 font-medium">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentPatients.map((patient, index) => (
-                    <tr key={patient.id} className="border-b hover:bg-muted/50">
-                      <td className="p-4">{startIndex + index + 1}</td>
-                      <td className="p-4 font-medium">{patient.name}</td>
-                      <td className="p-4">{patient.age}</td>
-                      <td className="p-4">{patient.gender}</td>
-                      <td className="p-4">{patient.phone}</td>
-                      <td className="p-4">{patient.address}</td>
-                      <td className="p-4">
-                        <div className="flex gap-2 justify-end">
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(patient)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={() => handleDelete(patient)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {error && <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-lg">{error}</div>}
 
-            {/* Pagination */}
-            <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-muted-foreground">
-                Menampilkan {startIndex + 1} - {Math.min(endIndex, patients.length)} dari {patients.length} pasien
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button key={page} variant={currentPage === page ? "default" : "outline"} size="sm" onClick={() => setCurrentPage(page)}>
-                    {page}
-                  </Button>
-                ))}
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+            {isFetching ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">Memuat data pasien...</span>
               </div>
-            </div>
+            ) : patients.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>Belum ada data pasien.</p>
+                <p className="text-sm mt-2">Klik tombol "Tambah Pasien" untuk menambahkan data baru.</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-4 font-medium">No</th>
+                        <th className="text-left p-4 font-medium">Nama</th>
+                        <th className="text-left p-4 font-medium">Jenis Kelamin</th>
+                        <th className="text-left p-4 font-medium">Telepon</th>
+                        <th className="text-right p-4 font-medium">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentPatients.map((patient, index) => (
+                        <tr key={patient.id} className="border-b hover:bg-muted/50">
+                          <td className="p-4">{startIndex + index + 1}</td>
+                          <td className="p-4 font-medium">{patient.name}</td>
+                          <td className="p-4">{patient.gender}</td>
+                          <td className="p-4">{patient.phone}</td>
+                          <td className="p-4">
+                            <div className="flex gap-2 justify-end">
+                              <Button variant="outline" size="sm" onClick={() => handleEdit(patient)}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button variant="destructive" size="sm" onClick={() => handleDelete(patient)}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-between mt-6">
+                  <p className="text-sm text-muted-foreground">
+                    Menampilkan {startIndex + 1} - {Math.min(endIndex, patients.length)} dari {patients.length} pasien
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button key={page} variant={currentPage === page ? "default" : "outline"} size="sm" onClick={() => setCurrentPage(page)}>
+                        {page}
+                      </Button>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </main>
@@ -192,32 +304,48 @@ export default function PatientDashboard() {
             {selectedPatient && (
               <div className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-name">Nama</Label>
+                  <Label htmlFor="edit-name">
+                    Nama <span className="text-destructive">*</span>
+                  </Label>
                   <Input id="edit-name" value={selectedPatient.name} onChange={(e) => setSelectedPatient({ ...selectedPatient, name: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-age">Usia</Label>
-                  <Input id="edit-age" type="number" value={selectedPatient.age} onChange={(e) => setSelectedPatient({ ...selectedPatient, age: parseInt(e.target.value) })} />
+                  <Label htmlFor="edit-gender">
+                    Jenis Kelamin <span className="text-destructive">*</span>
+                  </Label>
+                  <select
+                    id="edit-gender"
+                    value={selectedPatient.gender}
+                    onChange={(e) => setSelectedPatient({ ...selectedPatient, gender: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">Pilih jenis kelamin</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-gender">Jenis Kelamin</Label>
-                  <Input id="edit-gender" value={selectedPatient.gender} onChange={(e) => setSelectedPatient({ ...selectedPatient, gender: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-phone">Telepon</Label>
+                  <Label htmlFor="edit-phone">
+                    Telepon <span className="text-destructive">*</span>
+                  </Label>
                   <Input id="edit-phone" value={selectedPatient.phone} onChange={(e) => setSelectedPatient({ ...selectedPatient, phone: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-address">Alamat</Label>
-                  <Input id="edit-address" value={selectedPatient.address} onChange={(e) => setSelectedPatient({ ...selectedPatient, address: e.target.value })} />
                 </div>
               </div>
             )}
             <div className="p-6 border-t border-border flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+              <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={isLoading}>
                 Batal
               </Button>
-              <Button onClick={saveEdit}>Simpan</Button>
+              <Button onClick={saveEdit} disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  "Simpan"
+                )}
+              </Button>
             </div>
           </div>
         </div>
@@ -234,16 +362,23 @@ export default function PatientDashboard() {
                   Apakah Anda yakin ingin menghapus data pasien <strong>{selectedPatient?.name}</strong>? Tindakan ini tidak dapat dibatalkan.
                 </p>
               </div>
-              <button onClick={() => setIsDeleteOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button onClick={() => setIsDeleteOpen(false)} className="text-muted-foreground hover:text-foreground" disabled={isLoading}>
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+              <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isLoading}>
                 Batal
               </Button>
-              <Button variant="destructive" onClick={confirmDelete}>
-                Hapus
+              <Button variant="destructive" onClick={confirmDelete} disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Menghapus...
+                  </>
+                ) : (
+                  "Hapus"
+                )}
               </Button>
             </div>
           </div>
@@ -265,31 +400,47 @@ export default function PatientDashboard() {
             </div>
             <div className="p-6 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="add-name">Nama</Label>
+                <Label htmlFor="add-name">
+                  Nama <span className="text-destructive">*</span>
+                </Label>
                 <Input id="add-name" value={newPatient.name} onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })} placeholder="Masukkan nama lengkap" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="add-age">Usia</Label>
-                <Input id="add-age" type="number" value={newPatient.age} onChange={(e) => setNewPatient({ ...newPatient, age: e.target.value })} placeholder="Masukkan usia" />
+                <Label htmlFor="add-gender">
+                  Jenis Kelamin <span className="text-destructive">*</span>
+                </Label>
+                <select
+                  id="add-gender"
+                  value={newPatient.gender}
+                  onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Pilih jenis kelamin</option>
+                  <option value="Laki-laki">Laki-laki</option>
+                  <option value="Perempuan">Perempuan</option>
+                </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="add-gender">Jenis Kelamin</Label>
-                <Input id="add-gender" value={newPatient.gender} onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })} placeholder="Laki-laki / Perempuan" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="add-phone">Telepon</Label>
+                <Label htmlFor="add-phone">
+                  Telepon <span className="text-destructive">*</span>
+                </Label>
                 <Input id="add-phone" value={newPatient.phone} onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })} placeholder="08xxxxxxxxxx" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="add-address">Alamat</Label>
-                <Input id="add-address" value={newPatient.address} onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })} placeholder="Masukkan alamat lengkap" />
               </div>
             </div>
             <div className="p-6 border-t border-border flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsAddOpen(false)}>
+              <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={isLoading}>
                 Batal
               </Button>
-              <Button onClick={addPatient}>Tambah Pasien</Button>
+              <Button onClick={addPatient} disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  "Tambah Pasien"
+                )}
+              </Button>
             </div>
           </div>
         </div>
