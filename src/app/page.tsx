@@ -18,7 +18,7 @@ export default function AuthPage() {
             <LoginForm onSwitchToSignup={() => setIsSignup(true)} />
             {/* Background Image - Right Side */}
             <div className="bg-muted relative hidden md:block">
-              <img src="/api/placeholder/800/1000" alt="Authentication background" className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale" />
+              <img src="/asset.jpg" alt="Authentication background" className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale" />
             </div>
           </CardContent>
 
@@ -27,7 +27,7 @@ export default function AuthPage() {
             <div className="grid md:grid-cols-2 h-full">
               {/* Background Image in Signup */}
               <div className="bg-muted relative hidden md:block">
-                <img src="/api/placeholder/800/1000" alt="Authentication background" className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale" />
+                <img src="/asset.jpg" alt="Authentication background" className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale" />
               </div>
 
               {/* Signup Form */}

@@ -7,14 +7,16 @@ export interface Patient {
   nama: string;
   gender: "Male" | "Female";
   phoneNumber: string;
+  discharge_date: string;
   status: boolean;
   response: string;
 }
 
 export interface AddPatientPayload {
-  Name: string;
-  Gender: string;
-  PhoneNumber: string;
+  name: string;
+  gender: string;
+  phoneNumber: string;
+  discharge_date: string;
 }
 
 export interface AddPatientResponse {
@@ -29,9 +31,10 @@ export interface GetPatientResponse {
 }
 export interface UpdatePatientPayload {
   pasienid: string;
-  Name: string;
-  Gender: "Male" | "Female";
-  PhoneNumber: string;
+  name: string;
+  gender: "Male" | "Female";
+  phoneNumber: string;
+  dischargeDate: string;
 }
 
 export interface DeletePatientResponse {
@@ -48,7 +51,8 @@ export const patientService = {
     return apiClient.get("/patient/get-all-patient-by-userid");
   },
   updatePatient: async (payload: UpdatePatientPayload): Promise<AddPatientResponse> => {
-    return apiClient.put<AddPatientResponse>("/patient/update", payload);
+    console.log(payload);
+    return apiClient.put<AddPatientResponse>("/patient/update-patient", payload);
   },
 
   deletePatient: async (pasienid: string): Promise<DeletePatientResponse> => {

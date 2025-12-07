@@ -74,7 +74,7 @@ export function useAuth(): UseAuthReturn {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    router.push("/auth");
+    router.push("/");
   };
 
   const clearError = () => setError("");
