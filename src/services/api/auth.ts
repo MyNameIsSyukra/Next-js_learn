@@ -21,9 +21,11 @@ export interface UserProfileResponse {
 }
 
 export interface RegisterPayload {
-  email: string;
-  password: string;
-  password_confirmation: string;
+  Name: string;
+  PhoneNumber: string;
+  Email: string;
+  Password: string;
+  Keahlian: string;
 }
 
 export interface AuthResponse {

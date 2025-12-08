@@ -1,80 +1,112 @@
-"use client";
-import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSeparator } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { ErrorAlert } from "@/components/ui/error-alert";
+import React, { useState } from "react";
+import { Button, Input, ErrorAlert } from "./ui/Elements";
+import { useAuth } from "../hooks/use-auth";
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
   onSuccess: () => void;
 }
 
-export function SignupForm({ onSwitchToLogin, onSuccess }: SignupFormProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, onSuccess }) => {
+  // State for fields requested: Name, Phone, Role, Email, Password
+  const [Name, setName] = useState("");
+  const [PhoneNumber, setPhone] = useState("");
+  const [Keahlian, setRole] = useState("");
+  const [Email, setEmail] = useState("");
+  const [Password, setPassword] = useState("");
+
   const { register, loading, error, clearError } = useAuth();
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Pass all fields to register
     const success = await register({
-      email,
-      password,
-      password_confirmation: confirmPassword,
+      Name,
+      PhoneNumber,
+      Email,
+      Keahlian,
+      Password,
     });
 
     if (success) {
+      // Clear form
+      setName("");
+      setPhone("");
+      setRole("");
       setEmail("");
       setPassword("");
-      setConfirmPassword("");
       onSuccess();
     }
   };
-
   const handleSwitchForm = () => {
     clearError();
     onSwitchToLogin();
   };
+
   return (
-    <div className="p-8 md:p-10 flex items-center">
-      <FieldGroup className="w-full">
-        <div className="flex flex-col items-center gap-2 text-center mb-4">
-          <h1 className="text-2xl font-bold">Create your account</h1>
-          <p className="text-muted-foreground text-sm text-balance">Enter your email below to create your account</p>
-        </div>
-        {error && <ErrorAlert message={error} className="mb-4" />}
-        <Field className="mb-3">
-          <FieldLabel htmlFor="signup-email">Email</FieldLabel>
-          <Input id="signup-email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          <FieldDescription className="text-xs">We&apos;ll use this to contact you.</FieldDescription>
-        </Field>
-        <Field className="mb-3">
-          <div className="grid grid-cols-2 gap-4">
-            <Field>
-              <FieldLabel htmlFor="signup-password">Password</FieldLabel>
-              <Input id="signup-password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
-              <Input id="confirm-password" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-            </Field>
+    /* 
+      Updated Structure:
+      1. Wrapper: h-full, bg-white, overflow-y-auto (allows scrolling)
+      2. Inner: min-h-full, flex flex-col justify-center (centers vertically if space allows)
+    */
+    <div className="h-full bg-white overflow-y-auto scrollbar-hide">
+      <div className="min-h-full flex flex-col justify-center px-6 sm:px-8 md:px-12 lg:px-16 py-10">
+        <div className="flex flex-col mb-8 text-left">
+          <div className="inline-flex items-center gap-2 mb-6">
+            <div className="h-8 w-8 rounded-lg bg-black flex items-center justify-center text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                <path
+                  fillRule="evenodd"
+                  d="M1.5 9.75a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H2.25a.75.75 0 01-.75-.75zm18 0a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5h-2.25a.75.75 0 01-.75-.75zM12 8.25a5.25 5.25 0 015.25 5.25v2.628a2.625 2.625 0 01-2.625 2.625h-5.25a2.625 2.625 0 01-2.625-2.625V13.5A5.25 5.25 0 0112 8.25zM6.75 13.5a3.75 3.75 0 017.5 0v2.628a1.125 1.125 0 01-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125V13.5z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <span className="text-sm font-bold text-black tracking-wide">MEDICORE HIS</span>
           </div>
-          <FieldDescription className="text-xs">Must be at least 8 characters.</FieldDescription>
-        </Field>
-        <Field className="mb-3">
-          <Button onClick={handleSubmit} className="w-full" disabled={loading}>
-            {loading ? "Loading..." : "Create Account"}
-          </Button>
-        </Field>
-        <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card mb-3">Or continue with</FieldSeparator>
-        <FieldDescription className="text-center">
-          Already have an account?{" "}
-          <button type="button" onClick={handleSwitchForm} className="underline hover:text-primary">
-            Sign in
-          </button>
-        </FieldDescription>
-      </FieldGroup>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-black">Create Account</h1>
+          <p className="text-sm text-neutral-500 mt-1">Staff registration for Hospital Information System.</p>
+        </div>
+
+        <div className="grid gap-6">
+          {error && <ErrorAlert message={error} />}
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4">
+              {/* Full Name */}
+              <Input id="name" label="Full Name" placeholder="Dr. Jane Doe" type="text" required value={Name} onChange={(e) => setName(e.target.value)} />
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Phone */}
+                <Input id="phone" label="Phone" placeholder="+62..." type="tel" required value={PhoneNumber} onChange={(e) => setPhone(e.target.value)} />
+
+                {/* Role */}
+                <Input id="role" label="Role / Title" placeholder="Nurse, etc." type="text" required value={Keahlian} onChange={(e) => setRole(e.target.value)} />
+              </div>
+
+              {/* Email */}
+              <Input id="signup-email" label="Work Email" placeholder="name@hospital.com" type="email" required value={Email} onChange={(e) => setEmail(e.target.value)} />
+
+              {/* Password */}
+              <Input id="signup-password" label="Password" placeholder="••••••••••••" type="password" required value={Password} onChange={(e) => setPassword(e.target.value)} />
+
+              <div className="pt-2">
+                <Button type="submit" disabled={loading} className="w-full text-base bg-black hover:bg-neutral-800">
+                  {loading ? "Creating Account..." : "Register"}
+                </Button>
+              </div>
+            </div>
+          </form>
+
+          <p className="text-center text-sm text-neutral-500 mt-2">
+            Already have an account?{" "}
+            <Button variant="link" onClick={handleSwitchForm} className="text-black font-bold p-0 ml-1">
+              Sign In
+            </Button>
+          </p>
+        </div>
+      </div>
     </div>
   );
-}
+};

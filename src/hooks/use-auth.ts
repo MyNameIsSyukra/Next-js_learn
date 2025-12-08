@@ -49,13 +49,6 @@ export function useAuth(): UseAuthReturn {
     setLoading(true);
     setError("");
 
-    // Validasi password match
-    if (payload.password !== payload.password_confirmation) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return false;
-    }
-
     try {
       await authService.register(payload);
       return true;
