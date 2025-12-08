@@ -56,6 +56,6 @@ export const patientService = {
   },
 
   deletePatient: async (pasienid: string): Promise<DeletePatientResponse> => {
-    return apiClient.delete<DeletePatientResponse>(`/patient/delete/${pasienid}`);
+    return apiClient.delete<DeletePatientResponse>(`/patient/delete-patient?PasienID=${pasienid}`);
   },
 };
